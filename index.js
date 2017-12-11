@@ -48,24 +48,25 @@ class SteamWebAPI {
           return reject(err);
         }
 
-        const error = new Error();
-        error.statusCode = res.statusCode;
-    
-        if (res.headers['x-eresult']) {
-          error.eresult = parseInt(res.headers['x-eresult'], 10);
-          if (res.headers['x-eresult'] != 1) {
-            error.message = res.headers['x-error_message'] || EResult[res.headers['x-eresult']];
+        if(!Math.floor(res.statusCode / 100) != 2) {
+          let error = new Error();
+          error.statusCode = res.statusCode;
+      
+          if (res.headers['x-eresult']) {
+            error.eresult = parseInt(res.headers['x-eresult'], 10);
+            if (res.headers['x-eresult'] != 1) {
+              error.message = res.headers['x-error_message'] || EResult[res.headers['x-eresult']];
+            }
+          }
+      
+          if (res.statusCode != 200 && !error.message) {
+            error.message = res.statusMessage || 'HTTP error ' + res.statusCode;
+          }
+      
+          if (error.message) {
+            return reject(error);
           }
         }
-    
-        if (res.statusCode != 200 && !error.message) {
-          error.message = res.statusMessage || 'HTTP error ' + res.statusCode;
-        }
-    
-        if (error.message) {
-          return reject(error);
-        }
-
         return resolve(body);
       });
     });
