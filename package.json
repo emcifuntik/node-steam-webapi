@@ -1,12 +1,15 @@
 {
-	"name": "@doctormckay/steam-webapi",
-	"version": "1.1.1",
+	"name": "steam-webapi",
+	"version": "2.0.1",
 	"description": "Yet another Steam WebAPI client Node.js module",
-	"author": "Alexander Corn <mckay@doctormckay.com>",
+	"author": "Eugene Pogrebnyak <emcifuntik@live.com>, Alexander Corn <mckay@doctormckay.com>",
 	"url": "https://github.com/DoctorMcKay/node-steam-webapi",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/DoctorMcKay/node-steam-webapi"
+	},
+	"dependencies": {
+		"request": "^2.83.0"
 	}
 }

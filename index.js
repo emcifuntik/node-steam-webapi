@@ -1,136 +1,112 @@
-var Https = require('https');
-var QueryString = require('querystring');
-var Zlib = require('zlib');
+const request = require('request');
+const EResult = require('./resources/EResult.json');
+const methods = require('./resources/methods.json');
 
-var EResult = require('./resources/EResult.json');
+class SteamWebAPI {
+	constructor(key, localAddress, domain) {
+		if (key) {
+			this.key = key;
+		}
+  
+    this.localAddress = null;
+		if (localAddress) {
+			this.localAddress = localAddress;
+    }
 
-module.exports = SteamWebAPI;
+    this.domain = 'api.steampowered.com';
+    if(domain) {
+      this.domain = domain;
+    }
+    
+    this.userAgent = 'https://www.npmjs.com/package/@doctormckay/steam-webapi v' + require('./package.json').version;
+    this.setUpInterfaces();
+  }
 
-function SteamWebAPI(key, localAddress) {
-	if (key) {
-		this.key = key;
-	}
+  setUpInterfaces() {
+    for(let iface in methods) {
+      if(!(iface in this)) {
+        this[iface] = {};
+      }
 
-	if (localAddress) {
-		this.localAddress = localAddress;
-	}
+      for(let method of methods[iface]) {
+        this[iface][method] = this.get.bind(this, iface, method);
+      }
+    }
+  }
+
+  get(iface, method, input, version = 1) {
+    input.key = this.key;
+    return new Promise((resolve, reject) => {
+      request({
+        url: 'https://' + this.domain + '/' + iface + '/' + method + '/v' + version + '/',
+        method: 'GET',
+        qs: input,
+        gzip: true,
+        json: true
+      }, (err, res, body) => {
+        if(err) {
+          return reject(err);
+        }
+
+        const error = new Error();
+        error.statusCode = res.statusCode;
+    
+        if (res.headers['x-eresult']) {
+          error.eresult = parseInt(res.headers['x-eresult'], 10);
+          if (res.headers['x-eresult'] != 1) {
+            error.message = res.headers['x-error_message'] || EResult[res.headers['x-eresult']];
+          }
+        }
+    
+        if (res.statusCode != 200 && !error.message) {
+          error.message = res.statusMessage || 'HTTP error ' + res.statusCode;
+        }
+    
+        if (error.message) {
+          return reject(error);
+        }
+
+        return resolve(body);
+      });
+    });
+  }
+
+  post(iface, method, input, version = 1) {
+    input.key = this.key;
+    return new Promise((resolve, reject) => {
+      request({
+        url: 'https://' + this.domain + '/' + iface + '/' + method + '/v' + version + '/',
+        method: 'POST',
+        form: input,
+        gzip: true,
+        json: true
+      }, (err, res, body) => {
+        if(err) {
+          return reject(err);
+        }
+
+        const error = new Error();
+        error.statusCode = res.statusCode;
+    
+        if (res.headers['x-eresult']) {
+          error.eresult = parseInt(res.headers['x-eresult'], 10);
+          if (res.headers['x-eresult'] != 1) {
+            error.message = res.headers['x-error_message'] || EResult[res.headers['x-eresult']];
+          }
+        }
+    
+        if (res.statusCode != 200 && !error.message) {
+          error.message = res.statusMessage || 'HTTP error ' + res.statusCode;
+        }
+    
+        if (error.message) {
+          return reject(error);
+        }
+
+        return resolve(body);
+      });
+    });
+  }
 }
 
-SteamWebAPI.prototype.domain = "api.steampowered.com";
-SteamWebAPI.prototype.userAgent = "https://www.npmjs.com/package/@doctormckay/steam-webapi v" + require('./package.json').version;
-SteamWebAPI.prototype.localAddress = null;
-
-SteamWebAPI.prototype.get = function(iface, method, version, input, callback) {
-	this._req("GET", iface, method, version, input, callback);
-};
-
-SteamWebAPI.prototype.post = function(iface, method, version, input, callback) {
-	this._req("POST", iface, method, version, input, callback);
-};
-
-SteamWebAPI.prototype._req = function(httpMethod, iface, method, version, input, callback) {
-	// Preprocess arrays
-	if (typeof input === 'function') {
-		callback = input;
-		input = null;
-	}
-
-	input = input || {};
-
-	for (var i in input) {
-		if (!input.hasOwnProperty(i)) {
-			continue;
-		}
-		
-		if (input[i] instanceof Array) {
-			input[i].forEach(function(value, index) {
-				input[i + '[' + index + ']'] = value;
-			});
-
-			delete input[i];
-		} else if (Buffer.isBuffer(input[i])) {
-			input[i] = input[i].toString('binary'); // QueryString.stringify will translate this into percent-encoded
-		} else if (typeof input[i] === 'object') {
-			input[i] = input[i].toString();
-		}
-	}
-
-	if (this.key) {
-		input.key = this.key;
-	}
-
-	input.format = "json";
-	input = QueryString.stringify(input);
-
-	if (!iface.match(/^I[A-Z]/)) {
-		iface = "I" + iface;
-	}
-
-	var path = "/" + iface + "/" + method + "/v" + version + "/";
-
-	if (httpMethod == "GET") {
-		path += "?" + input;
-	}
-
-	var req = Https.request({
-		"host": this.domain,
-		"localAddress": this.localAddress,
-		"method": httpMethod,
-		"path": path,
-		"headers": {
-			"Accept-Encoding": "gzip",
-			"User-Agent": this.userAgent
-		}
-	}, function(res) {
-		var err = new Error();
-		err.statusCode = res.statusCode;
-
-		if (res.headers['x-eresult']) {
-			err.eresult = parseInt(res.headers['x-eresult'], 10);
-
-			if (res.headers['x-eresult'] != 1) {
-				err.message = res.headers['x-error_message'] || EResult[res.headers['x-eresult']];
-			}
-		}
-
-		if (res.statusCode != 200 && !err.message) {
-			err.message = res.statusMessage || "HTTP error " + res.statusCode;
-		}
-
-		if (err.message) {
-			callback(err);
-			return;
-		}
-
-		var response = '';
-		var stream = res;
-
-		// Looks like it worked so far
-		if (res.headers['content-encoding'] && res.headers['content-encoding'].toLowerCase() == 'gzip') {
-			stream = Zlib.createGunzip();
-			res.pipe(stream);
-		}
-
-		stream.on('data', function(chunk) {
-			response += chunk;
-		});
-
-		stream.on('end', function() {
-			try {
-				response = JSON.parse(response);
-			} catch (e) {
-				err.message = "Malformed response";
-				callback(err);
-				return;
-			}
-
-			if (Object.keys(response).length == 1 && response.response) {
-				response = response.response;
-			}
-
-			callback(null, response);
-		});
-	});
-
-	req.end(httpMethod == "POST" ? input : null);
-};
+module.exports = SteamWebAPI;
