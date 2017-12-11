@@ -26,25 +26,13 @@ You can change your API key at any time by assigning it to the `key` property. S
 
 # Methods
 
-### get(iface, method, version[, input], callback)
-- `iface` - The WebAPI interface that you want to use. The leading "I" is optional.
-    - For example, `IGameServersService` or `SteamUser`.
-- `method` - The WebAPI method that you want to use.
-    - For example, `GetPlayerSummaries`.
-- `version` - The numeric version of the method you want to use.
-    - For example, `1`.
-- `input` - Optional. An object containing the parameters you want to pass to this request.
-    - You shouldn't provide `key` or `format`, as these will be filled automatically.
-    - Array inputs (e.g. `input[0]=foo&input[1]=bar`) should be passed as JavaScript arrays. They will be serialized accordingly.
-- `callback` - A function to be called when the request completes
-    - `err` - An `Error` object on [failure](#failure), or `null` on success
-    - `response` - An object containing the [response](#response) data
+### Calling methods direclty
 
-Performs a GET request to a method.
-
-### post(iface, method, version[, input], callback)
-
-Same as [`get`](#getiface-method-version-input-callback) except with a POST request.
+You can call methods like 
+```javascript
+api.IEconService.GetTradeHistory({
+    steamid: 76561198194871150
+})```
 
 ### Interfaces
 ```json
@@ -252,6 +240,25 @@ Same as [`get`](#getiface-method-version-input-callback) except with a POST requ
   ]
 }
 ```
+
+### get(iface, method, version[, input])
+- `iface` - The WebAPI interface that you want to use. The leading "I" is optional.
+    - For example, `IGameServersService` or `SteamUser`.
+- `method` - The WebAPI method that you want to use.
+    - For example, `GetPlayerSummaries`.
+- `version` - The numeric version of the method you want to use.
+    - For example, `1`.
+- `input` - Optional. An object containing the parameters you want to pass to this request.
+    - You shouldn't provide `key` or `format`, as these will be filled automatically.
+    - Array inputs (e.g. `input[0]=foo&input[1]=bar`) should be passed as JavaScript arrays. They will be serialized accordingly.
+
+Returns `promise`
+
+Performs a GET request to a method.
+
+### post(iface, method, version[, input])
+
+Same as [`get`](#getiface-method-version-input-callback) except with a POST request.
 
 # Failure
 
