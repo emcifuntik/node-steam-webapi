@@ -32,7 +32,8 @@ You can call methods like
 ```javascript
 api.IEconService.GetTradeHistory({
     steamid: 76561198194871150
-})```
+});
+```
 
 ### Interfaces
 ```json
